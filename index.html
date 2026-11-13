@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parts of My Body - Interactive English Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka & Nunito -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js untuk efek suara interaktif -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #fef08a 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+        h1, h2, h3, .font-fredoka {
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        /* Animasi Kustom */
+        @keyframes bounceSlow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-slow {
+            animation: bounceSlow 2.5s infinite ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Gaya Tombol 3D */
+        .btn-3d {
+            transition: all 0.1s;
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Slot Huruf */
+        .letter-slot {
+            border-bottom: 4px solid #3b82f6;
+            transition: all 0.2s;
+        }
+        .letter-slot.filled {
+            border-bottom-color: #10b981;
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+        .letter-slot.error {
+            border-bottom-color: #ef4444;
+            background-color: #fef2f2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-3 sm:p-6">
+
+    <!-- Header & Navigasi Atas -->
+    <header class="w-full max-w-4xl flex flex-wrap items-center justify-between bg-white/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-lg border-2 border-blue-200 mb-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-500 text-white p-2.5 rounded-xl shadow-md text-2xl">
+                🧍‍♂️
+            </div>
+            <div>
+                <h1 class="text-lg sm:text-2xl font-bold text-blue-900 leading-tight">Parts of My Body</h1>
+                <p class="text-xs sm:text-sm text-blue-600 font-semibold">Bahasa Inggris Kelas 3 • Reading & Writing</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
+            <!-- Skor -->
+            <div class="bg-amber-100 border-2 border-amber-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <span class="text-lg">⭐</span>
+                <span class="font-bold text-amber-800 text-sm sm:text-base" id="score-display">0</span>
+            </div>
+            <!-- Tombol Suara -->
+            <button id="sound-toggle" class="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-xl border-2 border-blue-300 transition" title="Suara Efek">
+                🔊
+            </button>
+            <!-- Tombol Bantuan / Kamus Mini -->
+            <button onclick="toggleWordBank()" class="bg-purple-500 hover:bg-purple-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm btn-3d flex items-center gap-1">
+                <span>📖</span> <span class="hidden sm:inline">Word Bank</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Kontainer Utama -->
+    <main class="w-full max-w-4xl flex-grow flex flex-col items-center justify-center relative">
+        
+        <!-- LAYAR 1: MENU UTAMA & INPUT IDENTITAS (Seperti LKPD) -->
+        <section id="start-screen" class="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-blue-300 text-center animate-pop">
+            <div class="text-6xl mb-3 animate-bounce-slow">👦🏻👧🏻</div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-blue-900 mb-2">Let's Learn & Play!</h2>
+            <p class="text-gray-600 mb-6 text-sm sm:text-base">
+                Baca kalimat petunjuknya dengan teliti, lalu tulis nama anggota tubuh dalam Bahasa Inggris dengan benar!
+            </p>
+
+            <!-- Form Identitas Siswa -->
+            <div class="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100 mb-6 text-left space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Nama Siswa (Student's Name)</label>
+                    <input type="text" id="student-name" placeholder="Contoh: Budi Santoso" class="w-full px-4 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none font-bold text-gray-700">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Kelas (Class)</label>
+                        <input type="text" id="student-class" value="3 (Fase B)" class="w-full px-4 py-2 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none font-bold text-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Mode Permainan</label>
+                        <select id="game-mode" class="w-full px-3 py-2 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none font-bold text-blue-900 bg-white">
+                            <option value="tiles">Mode 1: Susun Huruf (Mudah)</option>
+                            <option value="typing">Mode 2: Ketik Mandiri (Mahir)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-fredoka text-xl sm:text-2xl font-bold py-4 rounded-2xl btn-3d shadow-lg">
+                MULAI BERMAIN 🚀
+            </button>
+        </section>
+
+        <!-- LAYAR 2: ARENA PERMAINAN UTAMA -->
+        <section id="game-screen" class="hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
+            
+            <!-- Kolom Kiri: Canvas Visualisasi Karakter & Anggota Tubuh (5 Kolom di Desktop) -->
+            <div class="lg:col-span-5 bg-white rounded-3xl p-4 shadow-xl border-4 border-blue-200 flex flex-col items-center justify-between">
+                <div class="w-full flex justify-between items-center mb-2">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-extrabold px-3 py-1 rounded-full">
+                        Soal <span id="question-number">1</span> / 7
+                    </span>
+                    <button onclick="speakSentence()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow transition">
+                        <span>🗣️</span> Dengarkan Kalimat
+                    </button>
+                </div>
+
+                <!-- HTML5 Canvas untuk Ilustrasi Interaktif -->
+                <div id="canvas-container" class="w-full h-56 sm:h-64 bg-sky-50 rounded-2xl border-2 border-dashed border-sky-300 relative overflow-hidden flex items-center justify-center">
+                    <canvas id="bodyCanvas"></canvas>
+                </div>
+
+                <div class="w-full mt-3 text-center">
+                    <p class="text-xs text-gray-500 font-semibold" id="visual-hint-text">Perhatikan bagian yang ditunjuk pada gambar!</p>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Area Reading & Writing (7 Kolom di Desktop) -->
+            <div class="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-7 shadow-xl border-4 border-indigo-200 flex flex-col justify-between">
+                
+                <!-- Bagian 1: READING (Membaca Kalimat Deskripsi) -->
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            📖 Step 1: Read the Sentence
+                        </span>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl p-4 sm:p-5 mb-4">
+                        <p class="text-xl sm:text-3xl font-fredoka font-bold text-indigo-950 text-center leading-relaxed" id="sentence-display">
+                            "I see with my <span class="text-blue-600 underline decoration-wavy">______</span>."
+                        </p>
+                        <p class="text-center text-xs sm:text-sm text-indigo-600 font-semibold mt-2" id="translation-hint">
+                            (Artinya: Aku melihat dengan ______-ku)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bagian 2: WRITING (Menulis / Menyusun Kata) -->
+                <div class="my-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="bg-emerald-100 text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            ✏️ Step 2: Write the Body Part
+                        </span>
+                        <button onclick="giveHint()" id="hint-btn" class="text-xs font-bold text-amber-600 hover:text-amber-700 underline">
+                            💡 Minta Petunjuk Huruf
+                        </button>
+                    </div>
+
+                    <!-- MODE 1: Susun Kartu Huruf (Letter Tiles) -->
+                    <div id="tiles-mode-area" class="space-y-4">
+                        <!-- Kotak Jawaban -->
+                        <div id="answer-slots" class="flex justify-center gap-2 sm:gap-3 min-h-[56px] items-center">
+                            <!-- Diisi via JS -->
+                        </div>
+
+                        <!-- Pilihan Huruf Acak -->
+                        <div id="letter-pool" class="flex flex-wrap justify-center gap-2 sm:gap-2.5 pt-2">
+                            <!-- Diisi via JS -->
+                        </div>
+                    </div>
+
+                    <!-- MODE 2: Ketik Langsung (Typing Input) -->
+                    <div id="typing-mode-area" class="hidden space-y-3">
+                        <div class="relative">
+                            <input type="text" id="typing-input" autocomplete="off" placeholder="Ketik jawaban di sini..." 
+                                class="w-full text-center text-2xl sm:text-3xl font-fredoka font-bold uppercase tracking-widest py-3 px-4 rounded-2xl border-4 border-blue-300 focus:border-emerald-500 focus:outline-none text-gray-800">
+                        </div>
+                        <p class="text-center text-xs text-gray-400">Tekan tombol <b>Enter</b> atau klik tombol <b>Cek Jawaban</b></p>
+                    </div>
+                </div>
+
+                <!-- Pesan Umpan Balik (Feedback) -->
+                <div id="feedback-banner" class="hidden rounded-xl p-3 text-center font-bold text-sm sm:text-base my-2"></div>
+
+                <!-- Tombol Aksi Bawah -->
+                <div class="flex gap-3 pt-3 border-t-2 border-gray-100">
+                    <button onclick="clearAnswer()" id="clear-btn" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl btn-3d text-sm sm:text-base">
+                        🔄 Hapus
+                    </button>
+                    <button onclick="checkAnswer()" id="check-btn" class="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-fredoka font-bold py-3 rounded-xl btn-3d text-base sm:text-lg">
+                        Cek Jawaban ✅
+                    </button>
+                    <button onclick="nextQuestion()" id="next-btn" class="hidden w-full bg-emerald-500 hover:bg-emerald-600 text-white font-fredoka font-bold py-3 rounded-xl btn-3d text-base sm:text-lg">
+                        Soal Berikutnya ➡️
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- LAYAR 3: HASIL AKHIR / RAPOR MINI LKPD -->
+        <section id="result-screen" class="hidden w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-amber-300 text-center animate-pop">
+            <div class="text-6xl mb-2">🏆</div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-blue-900">Great Job! Selesai!</h2>
+            <p class="text-gray-600 text-sm mb-5">Berikut adalah hasil latihan membaca dan menulis kamu:</p>
+
+            <!-- Kartu Nilai ala LKPD -->
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 mb-6 text-left">
+                <div class="flex flex-wrap justify-between items-center border-b-2 border-amber-200 pb-3 mb-3">
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold uppercase">Nama Siswa</p>
+                        <p class="text-lg font-extrabold text-gray-800" id="res-name">-</p>
+                        <p class="text-xs font-semibold text-blue-700" id="res-class">Kelas 3</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500 font-bold uppercase">Nilai Akhir</p>
+                        <p class="text-4xl font-fredoka font-bold text-emerald-600" id="res-score">100</p>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Jawaban -->
+                <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="summary-list">
+                    <!-- Diisi via JS -->
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="restartGame()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-fredoka font-bold py-3.5 rounded-2xl btn-3d text-lg">
+                    🔄 Main Lagi
+                </button>
+                <button onclick="switchModeAndRestart()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-fredoka font-bold py-3.5 rounded-2xl btn-3d text-lg">
+                    ✍️ Ganti Mode Menulis
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL WORD BANK (Kamus Mini Kosakata LKPD) -->
+    <div id="wordbank-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-purple-300 animate-pop">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-purple-900 flex items-center gap-2">
+                    <span>📖</span> Word Bank (Kosakata)
+                </h3>
+                <button onclick="toggleWordBank()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 w-8 h-8 rounded-full font-bold">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Klik kata di bawah untuk mendengarkan cara membacanya:</p>
+            <div class="grid grid-cols-2 gap-2.5" id="wordbank-grid">
+                <!-- Diisi via JS -->
+            </div>
+            <button onclick="toggleWordBank()" class="mt-5 w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl btn-3d">
+                Tutup Kamus
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-4xl text-center text-xs text-blue-900/70 font-semibold mt-4">
+        Media Pembelajaran Interaktif Bahasa Inggris • Kelas 3 Fase B • Topik: Parts of My Body
+    </footer>
+
+    <script>
+        // ==========================================
+        // 1. DATA SOAL 7 ANGGOTA TUBUH (KELAS 3)
+        // ==========================================
+        const questionsData = [
+            {
+                id: 1,
+                prefix: "I wear a cap on my",
+                answer: "HEAD",
+                meaning: "Aku memakai topi di kepalaku",
+                partKey: "head",
+                emoji: "🧢",
+                extraLetters: ["T", "O"]
+            },
+            {
+                id: 2,
+                prefix: "I see the rainbow with my",
+                answer: "EYES",
+                meaning: "Aku melihat pelangi dengan mataku",
+                partKey: "eyes",
+                emoji: "👀",
+                extraLetters: ["A", "T"]
+            },
+            {
+                id: 3,
+                prefix: "I listen to music with my",
+                answer: "EARS",
+                meaning: "Aku mendengarkan musik dengan telingaku",
+                partKey: "ears",
+                emoji: "👂",
+                extraLetters: ["O", "T"]
+            },
+            {
+                id: 4,
+                prefix: "I smell a flower with my",
+                answer: "NOSE",
+                meaning: "Aku mencium bau bunga dengan hidungku",
+                partKey: "nose",
+                emoji: "👃",
+                extraLetters: ["A", "T"]
+            },
+            {
+                id: 5,
+                prefix: "I eat and speak with my",
+                answer: "MOUTH",
+                meaning: "Aku makan dan berbicara dengan mulutku",
+                partKey: "mouth",
+                emoji: "👄",
+                extraLetters: ["A", "S"]
+            },
+            {
+                id: 6,
+                prefix: "I write and clap with my",
+                answer: "HANDS",
+                meaning: "Aku menulis dan bertepuk tangan dengan tanganku",
+                partKey: "hands",
+                emoji: "🙌",
+                extraLetters: ["E", "O"]
+            },
+            {
+                id: 7,
+                prefix: "I run and kick a ball with my",
+                answer: "LEGS",
+                meaning: "Aku berlari dan menendang bola dengan kakiku",
+                partKey: "legs",
+                emoji: "🦵",
+                extraLetters: ["A", "O"]
+            }
+        ];
+
+        // ==========================================
+        // 2. STATE PERMAINAN
+        // ==========================================
+        let currentIndex = 0;
+        let score = 0;
+        let gameMode = 'tiles'; // 'tiles' atau 'typing'
+        let currentTiles = []; // Huruf yang dipilih siswa di mode tiles
+        let poolTiles = [];    // Huruf tersedia di pool
+        let isAnswered = false;
+        let soundEnabled = true;
+        let userHistory = [];
+        let animFrameId = null;
+        let pulseTime = 0;
+
+        // ==========================================
+        // 3. SISTEM AUDIO (TONE.JS & SPEECH SYNTHESIS)
+        // ==========================================
+        let synth = null;
+        function initAudio() {
+            if (!synth && typeof Tone !== 'undefined') {
+                synth = new Tone.PolySynth(Tone.Synth).toDestination();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!synth) return;
+
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+
+            const now = Tone.now();
+            if (type === 'click') {
+                synth.triggerAttackRelease("C5", "32n", now);
+            } else if (type === 'correct') {
+                synth.triggerAttackRelease("C5", "16n", now);
+                synth.triggerAttackRelease("E5", "16n", now + 0.1);
+                synth.triggerAttackRelease("G5", "8n", now + 0.2);
+            } else if (type === 'wrong') {
+                synth.triggerAttackRelease("E3", "8n", now);
+                synth.triggerAttackRelease("Eb3", "8n", now + 0.15);
+            } else if (type === 'win') {
+                synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "4n", now);
+            }
+        }
+
+        // Text-to-Speech Bahasa Inggris
+        function speakEnglish(text) {
+            if (!soundEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85; // Sedikit lambat agar jelas untuk anak kelas 3
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakSentence() {
+            const q = questionsData[currentIndex];
+            const textToSpeak = isAnswered ? `${q.prefix} ${q.answer.toLowerCase()}.` : `${q.prefix} ...`;
+            speakEnglish(textToSpeak);
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', function() {
+            soundEnabled = !soundEnabled;
+            this.textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        // ==========================================
+        // 4. HTML5 CANVAS: GAMBAR KARAKTER & HIGHLIGHT
+        // ==========================================
+        const canvas = document.getElementById('bodyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawCharacterScene() {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            pulseTime += 0.08;
+            const currentQ = questionsData[currentIndex];
+            const activePart = currentQ ? currentQ.partKey : '';
+
+            // Posisi karakter di sebelah kiri canvas
+            const charX = w * 0.34;
+            const charY = h * 0.54;
+            const scale = Math.min(w, h) / 230;
+
+            ctx.save();
+            ctx.translate(charX, charY);
+            ctx.scale(scale, scale);
+
+            // --- BAYANGAN LANTAI ---
+            ctx.fillStyle = 'rgba(14, 165, 233, 0.15)';
+            ctx.beginPath();
+            ctx.ellipse(0, 82, 42, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // --- KAKI (FOOT / LEGS & KNEE) ---
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 3;
+            // Celana
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(-20, 35, 16, 32);
+            ctx.fillRect(4, 35, 16, 32);
+            ctx.strokeRect(-20, 35, 16, 32);
+            ctx.strokeRect(4, 35, 16, 32);
+
+            // Penanda Lutut (Knee)
+            if (activePart === 'knee') {
+                ctx.fillStyle = '#facc15';
+                ctx.beginPath();
+                ctx.arc(-12, 52, 5, 0, Math.PI * 2);
+                ctx.arc(12, 52, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Sepatu / Kaki (Foot)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.roundRect(-26, 67, 24, 14, 7);
+            ctx.roundRect(2, 67, 24, 14, 7);
+            ctx.fill();
+            // --- KAKI (LEGS & FOOT) ---
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 3;
+            // Celana / Tungkai Kaki (Legs)
+            ctx.fillStyle = activePart === 'legs' ? '#facc15' : '#3b82f6';
+            ctx.fillRect(-20, 35, 16, 32);
+            ctx.fillRect(4, 35, 16, 32);
+            ctx.strokeRect(-20, 35, 16, 32);
+            ctx.strokeRect(4, 35, 16, 32);
+
+            // Sepatu / Kaki (Foot)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.roundRect(-26, 67, 24, 14, 7);
+            ctx.roundRect(2, 67, 24, 14, 7);
+            ctx.fill();
+            ctx.stroke();
+
+            // --- BADAN (TORSO) ---
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.roundRect(-26, -12, 52, 50, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            // --- TANGAN (HANDS & ARMS) ---
+            // Lengan kiri & kanan
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.roundRect(-42, -8, 16, 36, 8);
+            ctx.roundRect(26, -8, 16, 36, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            // Telapak Tangan (Hands)
+            ctx.fillStyle = activePart === 'hands' ? '#facc15' : '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(-34, 32, 9, 0, Math.PI * 2);
+            ctx.arc(34, 32, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // --- KEPALA (HEAD) ---
+            // Telinga (Ears)
+            ctx.fillStyle = activePart === 'ears' ? '#facc15' : '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(-34, -42, 8, 0, Math.PI * 2);
+            ctx.arc(34, -42, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Wajah / Kepala (Head)
+            ctx.fillStyle = activePart === 'head' ? '#fef08a' : '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(0, -45, 34, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Rambut (Hair)
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.arc(0, -52, 34, Math.PI, Math.PI * 2);
+            ctx.fill();
+
+            // Mata (Eyes)
+            ctx.fillStyle = activePart === 'eyes' ? '#fef08a' : '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-12, -46, 7, 0, Math.PI * 2);
+            ctx.arc(12, -46, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-12, -46, 3.5, 0, Math.PI * 2);
+            ctx.arc(12, -46, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hidung (Nose)
+            ctx.fillStyle = activePart === 'nose' ? '#facc15' : '#f97316';
+            ctx.beginPath();
+            ctx.arc(0, -38, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            if (activePart === 'nose') ctx.stroke();
+
+            // Mulut (Mouth)
+            if (activePart === 'mouth') {
+                ctx.fillStyle = '#fb7185';
+                ctx.beginPath();
+                ctx.arc(0, -29, 9, 0, Math.PI);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                // Senyum biasa
+                ctx.beginPath();
+                ctx.arc(0, -30, 9, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+            }
+
+            // --- LINGKARAN PENUNJUK (HIGHLIGHT PULSE) ---
+            let targetX = 0, targetY = 0;
+            let baseRadius = 15;
+            if (activePart === 'head') { targetX = 0; targetY = -52; baseRadius = 36; }
+            else if (activePart === 'eyes') { targetX = 12; targetY = -46; }
+            else if (activePart === 'ears') { targetX = 34; targetY = -42; }
+            else if (activePart === 'nose') { targetX = 0; targetY = -38; }
+            else if (activePart === 'mouth') { targetX = 0; targetY = -27; }
+            else if (activePart === 'hands') { targetX = 34; targetY = 32; }
+            else if (activePart === 'legs') { targetX = 12; targetY = 51; baseRadius = 18; }
+
+            const radius = baseRadius + Math.sin(pulseTime) * 4;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(targetX, targetY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Garis penunjuk ke kotak kartu di sebelah kanan
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(targetX + radius, targetY);
+            ctx.lineTo(75, -10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.restore();
+
+            // --- KARTU ZOOM VISUAL DI SEBELAH KANAN CANVAS ---
+            const cardW = Math.min(115, w * 0.36);
+            const cardH = Math.min(125, h * 0.62);
+            const cardX = w - cardW - 16;
+            const cardY = (h - cardH) / 2;
+
+            // Kotak kartu putih
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(cardX, cardY, cardW, cardH, 16);
+            ctx.fill();
+            ctx.stroke();
+
+            // Emoji besar anggota tubuh
+            ctx.font = `${Math.floor(cardW * 0.52)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(currentQ.emoji, cardX + cardW / 2, cardY + cardH * 0.44);
+
+            // Label bawah kartu
+            ctx.fillStyle = isAnswered ? '#059669' : '#0284c7';
+            ctx.font = 'bold 14px Fredoka, sans-serif';
+            const labelText = isAnswered ? currentQ.answer : `${currentQ.answer.length} Huruf`;
+            ctx.fillText(labelText, cardX + cardW / 2, cardY + cardH * 0.82);
+
+            animFrameId = requestAnimationFrame(drawCharacterScene);
+        }
+
+        // ==========================================
+        // 5. LOGIKA PERMAINAN (READING & WRITING)
+        // ==========================================
+        function startGame() {
+            playSound('click');
+            gameMode = document.getElementById('game-mode').value;
+            currentIndex = 0;
+            score = 0;
+            userHistory = [];
+            updateScoreUI();
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            resizeCanvas();
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            drawCharacterScene();
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            const q = questionsData[currentIndex];
+
+            // Update Nomor Soal & Tombol
+            document.getElementById('question-number').textContent = currentIndex + 1;
+            document.getElementById('feedback-banner').classList.add('hidden');
+            document.getElementById('check-btn').classList.remove('hidden');
+            document.getElementById('clear-btn').classList.remove('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('hint-btn').classList.remove('hidden');
+
+            // Tampilkan Kalimat Reading
+            renderSentence(false);
+            document.getElementById('translation-hint').textContent = `(${q.meaning})`;
+
+            // Siapkan Area Writing sesuai Mode
+            if (gameMode === 'tiles') {
+                document.getElementById('tiles-mode-area').classList.remove('hidden');
+                document.getElementById('typing-mode-area').classList.add('hidden');
+                setupTilesMode(q);
+            } else {
+                document.getElementById('tiles-mode-area').classList.add('hidden');
+                document.getElementById('typing-mode-area').classList.remove('hidden');
+                const input = document.getElementById('typing-input');
+                input.value = '';
+                input.disabled = false;
+                input.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-red-500');
+                setTimeout(() => input.focus(), 100);
+            }
+
+            // Bacakan kalimat otomatis
+            setTimeout(() => speakSentence(), 300);
+        }
+
+        function renderSentence(completed) {
+            const q = questionsData[currentIndex];
+            const sentenceEl = document.getElementById('sentence-display');
+            if (completed) {
+                sentenceEl.innerHTML = `"${q.prefix} <span class="text-emerald-600 font-extrabold underline">${q.answer.toLowerCase()}</span>."`;
+            } else {
+                const blanks = "_".repeat(q.answer.length);
+                sentenceEl.innerHTML = `"${q.prefix} <span class="text-blue-600 tracking-widest">${blanks}</span>."`;
+            }
+        }
+
+        // --- LOGIKA MODE 1: SUSUN KARTU HURUF (TILES) ---
+        function setupTilesMode(q) {
+            currentTiles = Array(q.answer.length).fill(null);
+            
+            // Gabungkan huruf jawaban + huruf pengecoh, lalu acak
+            const allLetters = [...q.answer.split(''), ...q.extraLetters];
+            poolTiles = allLetters
+                .map((char, idx) => ({ id: idx, char, used: false }))
+                .sort(() => Math.random() - 0.5);
+
+            renderTilesUI();
+        }
+
+        function renderTilesUI() {
+            const slotsContainer = document.getElementById('answer-slots');
+            const poolContainer = document.getElementById('letter-pool');
+            slotsContainer.innerHTML = '';
+            poolContainer.innerHTML = '';
+
+            // Render Kotak Slot Jawaban
+            currentTiles.forEach((tileObj, slotIdx) => {
+                const slotBtn = document.createElement('button');
+                slotBtn.className = `letter-slot w-11 h-12 sm:w-14 sm:h-14 rounded-xl font-fredoka text-2xl sm:text-3xl font-bold flex items-center justify-center shadow-sm ${
+                    tileObj ? 'filled bg-white border-2 border-blue-400 cursor-pointer' : 'bg-gray-100 border-2 border-dashed border-gray-300'
+                }`;
+                slotBtn.textContent = tileObj ? tileObj.char : '';
+                if (tileObj && !isAnswered) {
+                    slotBtn.onclick = () => removeTileFromSlot(slotIdx);
+                }
+                slotsContainer.appendChild(slotBtn);
+            });
+
+            // Render Kartu Huruf di Pool
+            poolTiles.forEach((tileObj) => {
+                const btn = document.createElement('button');
+                btn.className = `w-11 h-12 sm:w-13 sm:h-13 rounded-xl font-fredoka text-xl sm:text-2xl font-bold btn-3d transition ${
+                    tileObj.used 
+                    ? 'bg-gray-200 text-gray-400 opacity-40 cursor-not-allowed shadow-none' 
+                    : 'bg-amber-300 hover:bg-amber-400 text-amber-950 border-2 border-amber-500'
+                }`;
+                btn.textContent = tileObj.char;
+                btn.disabled = tileObj.used || isAnswered;
+                btn.onclick = () => selectTileFromPool(tileObj.id);
+                poolContainer.appendChild(btn);
+            });
+        }
+
+        function selectTileFromPool(tileId) {
+            if (isAnswered) return;
+            const emptyIndex = currentTiles.findIndex(item => item === null);
+            if (emptyIndex === -1) return; // Slot sudah penuh
+
+            const tile = poolTiles.find(t => t.id === tileId);
+            if (tile && !tile.used) {
+                playSound('click');
+                tile.used = true;
+                currentTiles[emptyIndex] = tile;
+                renderTilesUI();
+            }
+        }
+
+        function removeTileFromSlot(slotIdx) {
+            if (isAnswered) return;
+            const tile = currentTiles[slotIdx];
+            if (tile) {
+                playSound('click');
+                tile.used = false;
+                currentTiles[slotIdx] = null;
+                renderTilesUI();
+            }
+        }
+
+        function clearAnswer() {
+            if (isAnswered) return;
+            playSound('click');
+            if (gameMode === 'tiles') {
+                currentTiles = Array(questionsData[currentIndex].answer.length).fill(null);
+                poolTiles.forEach(t => t.used = false);
+                renderTilesUI();
+            } else {
+                const input = document.getElementById('typing-input');
+                input.value = '';
+                input.focus();
+            }
+            document.getElementById('feedback-banner').classList.add('hidden');
+        }
+
+        // --- FITUR PETUNJUK (HINT) ---
+        function giveHint() {
+            if (isAnswered) return;
+            const q = questionsData[currentIndex];
+            playSound('click');
+
+            if (gameMode === 'tiles') {
+                // Cari slot pertama yang kosong atau salah
+                let targetIdx = currentTiles.findIndex((t, idx) => !t || t.char !== q.answer[idx]);
+                if (targetIdx === -1) return;
+
+                // Jika ada huruf salah di slot tersebut, kembalikan ke pool
+                if (currentTiles[targetIdx]) {
+                    currentTiles[targetIdx].used = false;
+                    currentTiles[targetIdx] = null;
+                }
+
+                const neededChar = q.answer[targetIdx];
+                // Cari kartu huruf yang cocok dan belum dipakai
+                let matchingTile = poolTiles.find(t => !t.used && t.char === neededChar);
+                // Jika sudah dipakai di slot lain, ambil dari slot lain itu
+                if (!matchingTile) {
+                    const otherSlotIdx = currentTiles.findIndex(t => t && t.char === neededChar);
+                    if (otherSlotIdx !== -1) {
+                        matchingTile = currentTiles[otherSlotIdx];
+                        currentTiles[otherSlotIdx] = null;
+                    }
+                }
+
+                if (matchingTile) {
+                    matchingTile.used = true;
+                    currentTiles[targetIdx] = matchingTile;
+                    renderTilesUI();
+                }
+            } else {
+                const input = document.getElementById('typing-input');
+                const currentVal = input.value.toUpperCase();
+                let nextLen = 1;
+                for (let i = 0; i < q.answer.length; i++) {
+                    if (currentVal[i] !== q.answer[i]) {
+                        nextLen = i + 1;
+                        break;
+                    }
+                }
+                input.value = q.answer.substring(0, nextLen);
+                input.focus();
+            }
+        }
+
+        // --- CEK JAWABAN ---
+        function checkAnswer() {
+            if (isAnswered) return;
+            const q = questionsData[currentIndex];
+            let userWord = '';
+
+            if (gameMode === 'tiles') {
+                if (currentTiles.includes(null)) {
+                    showFeedback('⚠️ Lengkapi semua kotak huruf terlebih dahulu!', 'warning');
+                    playSound('wrong');
+                    return;
+                }
+                userWord = currentTiles.map(t => t.char).join('');
+            } else {
+                userWord = document.getElementById('typing-input').value.trim().toUpperCase();
+                if (!userWord) {
+                    showFeedback('⚠️ Ketik jawabanmu terlebih dahulu ya!', 'warning');
+                    playSound('wrong');
+                    return;
+                }
+            }
+
+            if (userWord === q.answer) {
+                // JAWABAN BENAR
+                isAnswered = true;
+                score += 100;
+                updateScoreUI();
+                playSound('correct');
+
+                renderSentence(true);
+                showFeedback(`🎉 Hebat! "${q.prefix} ${q.answer.toLowerCase()}."`, 'success');
+                speakEnglish(`${q.prefix} ${q.answer.toLowerCase()}`);
+
+                if (gameMode === 'typing') {
+                    const input = document.getElementById('typing-input');
+                    input.disabled = true;
+                    input.classList.add('border-emerald-500', 'bg-emerald-50');
+                } else {
+                    renderTilesUI();
+                }
+
+                userHistory.push({
+                    sentence: `${q.prefix} ${q.answer.toLowerCase()}.`,
+                    meaning: q.meaning,
+                    emoji: q.emoji,
+                    correct: true
+                });
+
+                // Ganti tombol ke Next
+                document.getElementById('check-btn').classList.add('hidden');
+                document.getElementById('clear-btn').classList.add('hidden');
+                document.getElementById('hint-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+
+            } else {
+                // JAWABAN SALAH
+                playSound('wrong');
+                showFeedback(`❌ Belum tepat ("${userWord}"). Coba periksa lagi ejaannya!`, 'error');
+                
+                const container = gameMode === 'tiles' 
+                    ? document.getElementById('answer-slots') 
+                    : document.getElementById('typing-input');
+                container.classList.add('animate-shake');
+                setTimeout(() => container.classList.remove('animate-shake'), 450);
+            }
+        }
+
+        // Enter key support untuk Mode Ketik
+        document.getElementById('typing-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (!isAnswered) checkAnswer();
+                else nextQuestion();
+            }
+        });
+
+        function showFeedback(msg, type) {
+            const banner = document.getElementById('feedback-banner');
+            banner.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-red-100', 'text-red-800', 'bg-amber-100', 'text-amber-800');
+            
+            if (type === 'success') {
+                banner.classList.add('bg-emerald-100', 'text-emerald-800', 'border-2', 'border-emerald-300');
+            } else if (type === 'error') {
+                banner.classList.add('bg-red-100', 'text-red-800', 'border-2', 'border-red-300');
+            } else {
+                banner.classList.add('bg-amber-100', 'text-amber-800', 'border-2', 'border-amber-300');
+            }
+            banner.textContent = msg;
+        }
+
+        function nextQuestion() {
+            playSound('click');
+            currentIndex++;
+            if (currentIndex < questionsData.length) {
+                loadQuestion();
+            } else {
+                showResultScreen();
+            }
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-display').textContent = score;
+        }
+
+        // ==========================================
+        // 6. LAYAR HASIL AKHIR & WORD BANK
+        // ==========================================
+        function showResultScreen() {
+            playSound('win');
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const nameInput = document.getElementById('student-name').value.trim();
+            const classInput = document.getElementById('student-class').value.trim();
+
+            document.getElementById('res-name').textContent = nameInput || 'Siswa Hebat Kelas 3';
+            document.getElementById('res-class').textContent = `Kelas: ${classInput || '3 (Fase B)'}`;
+            
+            // Hitung nilai skala 100
+            const finalGrade = Math.round((score / (questionsData.length * 100)) * 100);
+            document.getElementById('res-score').textContent = finalGrade;
+
+            const summaryList = document.getElementById('summary-list');
+            summaryList.innerHTML = '';
+            userHistory.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-white p-2.5 rounded-xl border border-amber-200 text-sm';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${item.emoji}</span>
+                        <div>
+                            <p class="font-bold text-gray-800">${index + 1}. ${item.sentence}</p>
+                            <p class="text-xs text-gray-500">${item.meaning}</p>
+                        </div>
+                    </div>
+                    <span class="text-emerald-600 font-bold text-lg">✅</span>
+                `;
+                summaryList.appendChild(row);
+            });
+        }
+
+        function restartGame() {
+            playSound('click');
+            startGame();
+        }
+
+        function switchModeAndRestart() {
+            playSound('click');
+            gameMode = gameMode === 'tiles' ? 'typing' : 'tiles';
+            document.getElementById('game-mode').value = gameMode;
+            currentIndex = 0;
+            score = 0;
+            userHistory = [];
+            updateScoreUI();
+
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            resizeCanvas();
+            drawCharacterScene();
+            loadQuestion();
+        }
+
+        // Inisialisasi Word Bank Modal
+        function initWordBank() {
+            const grid = document.getElementById('wordbank-grid');
+            const indoMap = {
+                head: 'Kepala',
+                eyes: 'Mata',
+                ears: 'Telinga',
+                nose: 'Hidung',
+                mouth: 'Mulut',
+                hands: 'Tangan',
+                legs: 'Kaki'
+            };
+
+            questionsData.forEach(q => {
+                const card = document.createElement('button');
+                card.className = 'flex items-center gap-3 p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 text-left transition';
+                card.onclick = () => {
+                    playSound('click');
+                    speakEnglish(q.answer.toLowerCase());
+                };
+                card.innerHTML = `
+                    <span class="text-3xl">${q.emoji}</span>
+                    <div>
+                        <p class="font-fredoka font-bold text-purple-900 text-base">${q.answer}</p>
+                        <p class="text-xs text-purple-600 font-semibold">${indoMap[q.partKey]} 🔊</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleWordBank() {
+            playSound('click');
+            const modal = document.getElementById('wordbank-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Jalankan saat halaman siap
+        window.onload = function() {
+            initWordBank();
+        };
+    </script>
+</body>
+</html>
